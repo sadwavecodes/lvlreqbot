@@ -40,10 +40,11 @@ class SurveyModal(Modal):
         # Store the request details
         requests[request_id] = {
             'author_id': interaction.user.id,
+            'level_id': level_id,
             'embed': None,
             'responses': {
                 'Level Name': self.children[0].value,
-                'Level ID': self.children[1].value,
+                'Level ID': level_id,
                 'Difficulty': self.children[2].value,
                 'Video': self.children[3].value,
                 'Note': self.children[4].value,
@@ -55,7 +56,7 @@ class SurveyModal(Modal):
         embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
 
         embed.add_field(name="Level Name", value=self.children[0].value, inline=False)
-        embed.add_field(name="Level ID", value=self.children[1].value, inline=False)
+        embed.add_field(name="Level ID", value=level_id, inline=False)
         embed.add_field(name="Difficulty", value=self.children[2].value, inline=False)
         embed.add_field(name="Video", value=self.children[3].value, inline=False)
         embed.add_field(name="Note", value=self.children[4].value, inline=False)
@@ -73,27 +74,39 @@ class SurveyModal(Modal):
 
 # Define a modal for feedback
 class FeedbackModal(Modal):
-    def __init__(self, option, request_id, feedback_author):
+    def __init__(self, option, level_id, feedback_author):
         super().__init__(title=f"Feedback - {option}")
         self.option = option
-        self.request_id = request_id
+        self.level_id = level_id
         self.feedback_author = feedback_author
         self.add_item(TextInput(label="Reason", style=discord.TextStyle.paragraph, required=True))
 
     async def on_submit(self, interaction: discord.Interaction):
         reason = self.children[0].value
-        original_author_id = requests[self.request_id]['author_id']
+        request_id = None
+        
+        # Find the request ID associated with the level ID
+        for rid, request in requests.items():
+            if request['level_id'] == self.level_id:
+                request_id = rid
+                break
+        
+        if request_id is None:
+            await interaction.response.send_message("Failed to find the associated request. Please try again.", ephemeral=True)
+            return
+        
+        original_author_id = requests[request_id]['author_id']
         original_author = await bot.fetch_user(original_author_id)
         
         feedback_embed = discord.Embed(
-            title=f"Level {self.option} - {requests[self.request_id]['responses']['Level ID']}",
+            title=f"Level {self.option} - {self.level_id}",
             description=f"Reason:\n```{reason}```",
             color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
         )
         feedback_embed.set_footer(text=f"Requester: {original_author} | Request Helper: {self.feedback_author}")
 
         # Find the original request message and update the embed
-        original_message_id = requests[self.request_id]['message_id']
+        original_message_id = requests[request_id]['message_id']
         original_channel = interaction.channel
         original_message = await original_channel.fetch_message(original_message_id)
         await original_message.edit(embed=feedback_embed)
@@ -117,7 +130,7 @@ class FeedbackDropdown(Select):
 
     async def callback(self, interaction: discord.Interaction):
         option = self.values[0]
-        feedback_modal = FeedbackModal(option, self.request_id, interaction.user)
+        feedback_modal = FeedbackModal(option, requests[self.request_id]['responses']['Level ID'], interaction.user)
         await interaction.response.send_modal(feedback_modal)
 
 # Command to toggle the required status of a question

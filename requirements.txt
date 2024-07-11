@@ -1,2 +1,2 @@
-discord.py==2.1.0
-discord-ui==6.0.0
+discord.py
+discord-ui

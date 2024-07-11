@@ -62,7 +62,7 @@ async def modalreq(ctx, question_number: int):
 # Command to create the button
 @bot.command()
 async def reqbutton(ctx):
-    button = Button(label="Open Survey", style=discord.ButtonStyle.primary)
+    button = Button(label="Request A Level", style=discord.ButtonStyle.primary)
 
     async def button_callback(interaction: discord.Interaction):
         modal = SurveyModal(required_questions)
@@ -72,7 +72,7 @@ async def reqbutton(ctx):
 
     view = View()
     view.add_item(button)
-    await ctx.send("Click the button to open the survey:", view=view)
+    
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

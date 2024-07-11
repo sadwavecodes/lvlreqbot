@@ -1,7 +1,7 @@
 import os
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Modal, InputText
+from discord.ui import Button, View, Modal, TextInput
 
 # Get the token from the environment variable
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -21,9 +21,9 @@ class SurveyModal(Modal):
         self.required_status = required_status
 
         for i in range(5):
-            self.add_item(InputText(label=f"Question {i+1}", required=self.required_status[i]))
+            self.add_item(TextInput(label=f"Question {i+1}", required=self.required_status[i]))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
         # Create an embed with the responses
         embed = discord.Embed(title="Survey Responses", color=discord.Color.blue())
         embed.set_author(name=f"User ID: {interaction.user.id}")

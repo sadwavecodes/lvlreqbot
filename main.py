@@ -11,7 +11,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Define a dictionary to keep track of which questions are required
+# Define a list to keep track of which questions are required
 required_questions = [False] * 5
 
 # Define the modal class with 5 questions
@@ -45,7 +45,7 @@ async def modalreq(ctx, question_number: int):
 # Command to create the button
 @bot.command()
 async def reqbutton(ctx):
-    button = Button(label="Open Survey", style=discord.ButtonStyle.primary)
+    button = Button(label="Open Level Req", style=discord.ButtonStyle.primary)
 
     async def button_callback(interaction: discord.Interaction):
         modal = SurveyModal(required_questions)
@@ -54,8 +54,7 @@ async def reqbutton(ctx):
     button.callback = button_callback
 
     view = View()
-    view.add_item(button)
-    await ctx.send("Click the button to open the survey:", view=view)
+    view.add_item(button) 
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

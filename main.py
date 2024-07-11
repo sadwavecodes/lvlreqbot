@@ -65,6 +65,7 @@ class SurveyModal(Modal):
         # Create a button and dropdown menu
         button_view = FeedbackView(request_id)
         await interaction.channel.send(embed=embed, view=button_view)
+        await interaction.response.send_message("Request submitted successfully!", ephemeral=True)
 
 # Define a modal for feedback
 class FeedbackModal(Modal):
@@ -92,8 +93,9 @@ class FeedbackModal(Modal):
 
             # Send the feedback embed to the channel
             await interaction.channel.send(embed=feedback_embed)
+            await interaction.response.send_message("Feedback submitted successfully!", ephemeral=True)
         else:
-            await interaction.channel.send("Request not found.", ephemeral=True)
+            await interaction.response.send_message("Request not found.", ephemeral=True)
 
 # Define a view with a dropdown menu for feedback options
 class FeedbackView(View):

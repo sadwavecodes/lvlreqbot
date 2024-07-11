@@ -2,7 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from discord.ui import Button, View, Modal, TextInput, Select
-import uuid
+import itertools
 
 # Get the token from the environment variable
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -15,11 +15,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # Define a list to keep track of which questions are required
 required_questions = [False] * 5
 
-# Define a set to store used Level IDs
-used_level_ids = set()
-
 # Define a dictionary to store request details by request ID
 requests = {}
+request_id_counter = itertools.count(1)
 
 # Define the modal class with specified questions
 class SurveyModal(Modal):
@@ -36,14 +34,23 @@ class SurveyModal(Modal):
     async def on_submit(self, interaction: discord.Interaction):
         level_id = self.children[1].value
 
-        if level_id in used_level_ids:
-            await interaction.response.send_message(f"Level ID {level_id} has already been used. Please use a unique Level ID.", ephemeral=True)
-            return
+        # Generate a numerical request ID
+        request_id = next(request_id_counter)
 
-        used_level_ids.add(level_id)
+        # Store the request details
+        requests[request_id] = {
+            'author_id': interaction.user.id,
+            'embed': None,
+            'responses': {
+                'Level Name': self.children[0].value,
+                'Level ID': self.children[1].value,
+                'Difficulty': self.children[2].value,
+                'Video': self.children[3].value,
+                'Note': self.children[4].value,
+            }
+        }
 
         # Create an embed with the responses
-        request_id = str(uuid.uuid4())
         embed = discord.Embed(title="Request", color=discord.Color.blue())
         embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
 
@@ -54,16 +61,15 @@ class SurveyModal(Modal):
         embed.add_field(name="Note", value=self.children[4].value, inline=False)
         embed.set_footer(text=f"Request ID: {request_id}")
 
+        # Store the embed in the requests dictionary
+        requests[request_id]['embed'] = embed
+
         # Create a button and dropdown menu
         button_view = FeedbackView(request_id)
         message = await interaction.response.send_message(embed=embed, view=button_view)
 
-        # Store the original message ID and author for future reference
-        requests[request_id] = {
-            'message_id': message.id,
-            'author': interaction.user,
-            'embed': embed
-        }
+        # Store the original message ID for future reference
+        requests[request_id]['message_id'] = message.id
 
 # Define a modal for feedback
 class FeedbackModal(Modal):
@@ -76,7 +82,9 @@ class FeedbackModal(Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         reason = self.children[0].value
-        original_author = requests[self.request_id]['author']
+        original_author_id = requests[self.request_id]['author_id']
+        original_author = await bot.fetch_user(original_author_id)
+        
         feedback_embed = discord.Embed(
             title=f"Level {self.option}",
             description=f"Reason:\n```{reason}```",
@@ -135,7 +143,7 @@ async def reqbutton(ctx):
 
 # Command to reopen a request by ID
 @bot.command()
-async def req(ctx, request_id: str):
+async def req(ctx, request_id: int):
     if request_id in requests:
         embed = requests[request_id]['embed']
         view = FeedbackView(request_id)

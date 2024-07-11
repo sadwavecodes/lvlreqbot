@@ -94,7 +94,7 @@ class FeedbackModal(Modal):
 
             # Send the feedback embed to the channel
             await interaction.channel.send(
-                content=f"# {self.option} {original_author_mention} {self.feedback_author.mention}",
+                content=f"**{self.option}** {original_author_mention} {self.feedback_author.mention}",
                 embed=feedback_embed
             )
             await interaction.response.send_message("Feedback submitted successfully!", ephemeral=True)

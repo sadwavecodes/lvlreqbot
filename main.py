@@ -86,14 +86,17 @@ class FeedbackModal(Modal):
         original_author = await bot.fetch_user(original_author_id)
         
         feedback_embed = discord.Embed(
-            title=f"Level {self.option}",
+            title=f"Level {self.option} - {requests[self.request_id]['responses']['Level ID']}",
             description=f"Reason:\n```{reason}```",
             color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
         )
-        await interaction.response.send_message(
-            content=f"{original_author.mention}, {self.feedback_author.mention}",
-            embed=feedback_embed
-        )
+        feedback_embed.set_footer(text=f"Requester: {original_author} | Request Helper: {self.feedback_author}")
+
+        # Find the original request message and update the embed
+        original_message_id = requests[self.request_id]['message_id']
+        original_channel = interaction.channel
+        original_message = await original_channel.fetch_message(original_message_id)
+        await original_message.edit(embed=feedback_embed)
 
 # Define a view with a dropdown menu for feedback options
 class FeedbackView(View):
@@ -121,8 +124,7 @@ class FeedbackDropdown(Select):
 @bot.command()
 async def modalreq(ctx, question_number: int):
     if 1 <= question_number <= 5:
-        required_questions[question_number - 1] = not required_questions[question_number - 1]
-        await ctx.send(f"Question {question_number} required status toggled to {required_questions[question_number - 1]}")
+        required_questions[question_number - 1] = not required_questions[question_number - 1]]
     else:
         await ctx.send("Invalid question number. Please provide a number between 1 and 5.")
 
@@ -140,16 +142,6 @@ async def reqbutton(ctx):
     view = View()
     view.add_item(button)
     await ctx.send("Click the button to request a level.", view=view)
-
-# Command to reopen a request by ID
-@bot.command()
-async def req(ctx, request_id: int):
-    if request_id in requests:
-        embed = requests[request_id]['embed']
-        view = FeedbackView(request_id)
-        await ctx.send(embed=embed, view=view)
-    else:
-        await ctx.send("Invalid request ID. Please provide a valid request ID.")
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

@@ -69,12 +69,11 @@ class SurveyModal(Modal):
 
 # Define a modal for feedback
 class FeedbackModal(Modal):
-    def __init__(self, option, level_id, feedback_author, request_id):
+    def __init__(self, option, request_id, feedback_author):
         super().__init__(title=f"Feedback - {option}")
         self.option = option
-        self.level_id = level_id
-        self.feedback_author = feedback_author
         self.request_id = request_id
+        self.feedback_author = feedback_author
         self.add_item(TextInput(label="Reason", style=discord.TextStyle.paragraph, required=True))
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -82,17 +81,22 @@ class FeedbackModal(Modal):
 
         if self.request_id in requests:
             original_author_mention = requests[self.request_id]['author_mention']
+            level_id = requests[self.request_id]['level_id']
+            level_name = requests[self.request_id]['responses']['Level Name']
 
             feedback_embed = discord.Embed(
-                title=f"Level {self.option} - {self.level_id}",
-                description=f"Reason:\n```{reason}```",
+                title=f"Level {self.option}",
+                description=f"**Level Name:** {level_name}\n**Level ID:** {level_id}\n\n**Reason:**\n```{reason}```",
                 color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
             )
             feedback_embed.add_field(name="Requester", value=original_author_mention, inline=False)
             feedback_embed.add_field(name="Request Helper", value=self.feedback_author.mention, inline=False)
 
             # Send the feedback embed to the channel
-            await interaction.channel.send(embed=feedback_embed)
+            await interaction.channel.send(
+                content=f"#{self.option} {original_author_mention} {self.feedback_author.mention}",
+                embed=feedback_embed
+            )
             await interaction.response.send_message("Feedback submitted successfully!", ephemeral=True)
         else:
             await interaction.response.send_message("Request not found.", ephemeral=True)
@@ -116,7 +120,7 @@ class FeedbackDropdown(Select):
 
     async def callback(self, interaction: discord.Interaction):
         option = self.values[0]
-        feedback_modal = FeedbackModal(option, requests[self.request_id]['level_id'], interaction.user, self.request_id)
+        feedback_modal = FeedbackModal(option, self.request_id, interaction.user)
         await interaction.response.send_modal(feedback_modal)
 
 # Command to toggle the required status of a question

@@ -85,7 +85,7 @@ class FeedbackModal(Modal):
             level_name = requests[self.request_id]['responses']['Level Name']
 
             feedback_embed = discord.Embed(
-                title=f"Level {self.option}",
+                title=f"**Level {self.option}**",
                 description=f"**Level Name:** {level_name}\n**Level ID:** {level_id}\n\n**Reason:**\n```{reason}```",
                 color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
             )

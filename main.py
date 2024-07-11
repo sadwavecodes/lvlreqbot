@@ -67,8 +67,7 @@ class SurveyModal(Modal):
 
         # Create a button and dropdown menu
         button_view = FeedbackView(request_id)
-        message = await interaction.response.send_message(embed=embed, view=button_view)
-        requests[request_id]['message_id'] = message.id if message else None
+        await interaction.response.send_message(embed=embed, view=button_view)
 
 # Define a modal for feedback
 class FeedbackModal(Modal):
@@ -82,11 +81,10 @@ class FeedbackModal(Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         reason = self.children[0].value
-        try:
-            original_message_id = requests[self.request_id]['message_id']
+
+        if self.request_id in requests:
+            original_embed = requests[self.request_id]['embed']
             original_author_id = requests[self.request_id]['author_id']
-            original_channel = interaction.channel
-            original_message = await original_channel.fetch_message(original_message_id)
 
             feedback_embed = discord.Embed(
                 title=f"Level {self.option} - {self.level_id}",
@@ -95,9 +93,9 @@ class FeedbackModal(Modal):
             )
             feedback_embed.set_footer(text=f"Requester: {original_author_id} | Feedback Author: {self.feedback_author}")
 
-            await original_message.edit(embed=feedback_embed)
-        except KeyError:
-            await interaction.response.send_message("Unable to find original request message.", ephemeral=True)
+            await interaction.message.edit(embed=feedback_embed)
+        else:
+            await interaction.response.send_message("Request not found.", ephemeral=True)
 
 # Define a view with a dropdown menu for feedback options
 class FeedbackView(View):

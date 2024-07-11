@@ -124,7 +124,7 @@ class FeedbackDropdown(Select):
 @bot.command()
 async def modalreq(ctx, question_number: int):
     if 1 <= question_number <= 5:
-        required_questions[question_number - 1] = not required_questions[question_number - 1]]
+        required_questions[question_number - 1] = not required_questions[question_number - 1]
     else:
         await ctx.send("Invalid question number. Please provide a number between 1 and 5.")
 

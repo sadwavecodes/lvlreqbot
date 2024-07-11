@@ -40,8 +40,8 @@ class SurveyModal(Modal):
         # Store the request details
         requests[request_id] = {
             'author_id': interaction.user.id,
+            'author_mention': interaction.user.mention,
             'level_id': level_id,
-            'embed': None,
             'responses': {
                 'Level Name': self.children[0].value,
                 'Level ID': level_id,
@@ -62,12 +62,9 @@ class SurveyModal(Modal):
         embed.add_field(name="Note", value=self.children[4].value, inline=False)
         embed.set_footer(text=f"Request ID: {request_id}")
 
-        # Store the embed in the requests dictionary
-        requests[request_id]['embed'] = embed
-
         # Create a button and dropdown menu
         button_view = FeedbackView(request_id)
-        await interaction.response.send_message(embed=embed, view=button_view)
+        await interaction.channel.send(embed=embed, view=button_view)
 
 # Define a modal for feedback
 class FeedbackModal(Modal):
@@ -83,19 +80,20 @@ class FeedbackModal(Modal):
         reason = self.children[0].value
 
         if self.request_id in requests:
-            original_embed = requests[self.request_id]['embed']
-            original_author_id = requests[self.request_id]['author_id']
+            original_author_mention = requests[self.request_id]['author_mention']
 
             feedback_embed = discord.Embed(
                 title=f"Level {self.option} - {self.level_id}",
                 description=f"Reason:\n```{reason}```",
                 color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
             )
-            feedback_embed.set_footer(text=f"Requester: {original_author_id} | Feedback Author: {self.feedback_author}")
+            feedback_embed.add_field(name="Requester", value=original_author_mention, inline=False)
+            feedback_embed.add_field(name="Request Helper", value=self.feedback_author.mention, inline=False)
 
-            await interaction.message.edit(embed=feedback_embed)
+            # Send the feedback embed to the channel
+            await interaction.channel.send(embed=feedback_embed)
         else:
-            await interaction.response.send_message("Request not found.", ephemeral=True)
+            await interaction.channel.send("Request not found.", ephemeral=True)
 
 # Define a view with a dropdown menu for feedback options
 class FeedbackView(View):
@@ -116,7 +114,7 @@ class FeedbackDropdown(Select):
 
     async def callback(self, interaction: discord.Interaction):
         option = self.values[0]
-        feedback_modal = FeedbackModal(option, requests[self.request_id]['responses']['Level ID'], interaction.user, self.request_id)
+        feedback_modal = FeedbackModal(option, requests[self.request_id]['level_id'], interaction.user, self.request_id)
         await interaction.response.send_modal(feedback_modal)
 
 # Command to toggle the required status of a question
@@ -124,6 +122,7 @@ class FeedbackDropdown(Select):
 async def modalreq(ctx, question_number: int):
     if 1 <= question_number <= 5:
         required_questions[question_number - 1] = not required_questions[question_number - 1]
+        await ctx.send(f"Question {question_number} required status toggled to {required_questions[question_number - 1]}")
     else:
         await ctx.send("Invalid question number. Please provide a number between 1 and 5.")
 

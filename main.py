@@ -89,11 +89,12 @@ class FeedbackModal(Modal):
                 description=f"**Level Name:** {level_name}\n**Level ID:** {level_id}\n\n**Reason:**\n```{reason}```",
                 color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
             )
+            feedback_embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/816702248242380880.png?v=1" if self.option == "Sent" else "https://cdn.discordapp.com/emojis/816702133625421872.png?v=1")
             feedback_embed.add_field(name="Request Helper", value=self.feedback_author.mention, inline=False)
 
             # Send the feedback embed to the channel
             await interaction.channel.send(
-                content=f"As Requested By:{original_author_mention}",
+                content=f"As Requested By: {original_author_mention}",
                 embed=feedback_embed
             )
             await interaction.response.send_message("Feedback submitted successfully!", ephemeral=True)

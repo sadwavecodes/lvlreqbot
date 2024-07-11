@@ -1,7 +1,7 @@
 import os
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Modal, TextInput
+from discord.ui import Button, View, Modal, TextInput, Select
 
 # Get the token from the environment variable
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -39,7 +39,7 @@ class SurveyModal(Modal):
         used_level_ids.add(level_id)
 
         # Create an embed with the responses
-        embed = discord.Embed(title="Survey Responses", color=discord.Color.blue())
+        embed = discord.Embed(title="Request", color=discord.Color.blue())
         embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
 
         embed.add_field(name="Level Name", value=self.children[0].value, inline=False)
@@ -48,7 +48,56 @@ class SurveyModal(Modal):
         embed.add_field(name="Video", value=self.children[3].value, inline=False)
         embed.add_field(name="Note", value=self.children[4].value, inline=False)
 
-        await interaction.response.send_message(embed=embed)
+        # Create a button and dropdown menu
+        button_view = FeedbackView()
+        message = await interaction.response.send_message(embed=embed, view=button_view)
+
+        # Store the original message ID and author for future reference
+        button_view.message_id = message.id
+        button_view.author = interaction.user
+
+# Define a modal for feedback
+class FeedbackModal(Modal):
+    def __init__(self, option, original_author, feedback_author):
+        super().__init__(title=f"Feedback - {option}")
+        self.option = option
+        self.original_author = original_author
+        self.feedback_author = feedback_author
+        self.add_item(TextInput(label="Reason", style=discord.TextStyle.paragraph, required=True))
+
+    async def on_submit(self, interaction: discord.Interaction):
+        reason = self.children[0].value
+        feedback_embed = discord.Embed(
+            title=f"Level {self.option}",
+            description=f"Reason:\n```{reason}```",
+            color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
+        )
+        await interaction.response.send_message(
+            content=f"{self.original_author.mention}, {self.feedback_author.mention}",
+            embed=feedback_embed
+        )
+
+# Define a view with a dropdown menu for feedback options
+class FeedbackView(View):
+    def __init__(self):
+        super().__init__()
+        self.message_id = None
+        self.author = None
+        self.add_item(FeedbackDropdown())
+
+# Define the dropdown menu
+class FeedbackDropdown(Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="Sent", description="Mark the level as sent"),
+            discord.SelectOption(label="Not Sent", description="Mark the level as not sent")
+        ]
+        super().__init__(placeholder="Choose an action...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        option = self.values[0]
+        feedback_modal = FeedbackModal(option, self.view.author, interaction.user)
+        await interaction.response.send_modal(feedback_modal)
 
 # Command to toggle the required status of a question
 @bot.command()
@@ -62,7 +111,7 @@ async def modalreq(ctx, question_number: int):
 # Command to create the button
 @bot.command()
 async def reqbutton(ctx):
-    button = Button(label="Request A Level", style=discord.ButtonStyle.primary)
+    button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
 
     async def button_callback(interaction: discord.Interaction):
         modal = SurveyModal(required_questions)
@@ -72,8 +121,7 @@ async def reqbutton(ctx):
 
     view = View()
     view.add_item(button)
-    await ctx.send("Click the button to open to request a level.:", view=view)
-    
+    await ctx.send("Click the button to request a level.", view=view)
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

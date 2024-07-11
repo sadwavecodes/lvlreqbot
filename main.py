@@ -72,6 +72,7 @@ async def reqbutton(ctx):
 
     view = View()
     view.add_item(button)
+    await ctx.send("Click the button to open to request a level.:", view=view)
     
 
 # Run the bot

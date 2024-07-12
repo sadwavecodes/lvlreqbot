@@ -33,7 +33,7 @@ def load_requests():
         with open(REQUESTS_FILE_PATH, 'r') as file:
             data = json.load(file)
             requests = data.get('requests', {})
-            start_id = data.get('last_request_id', 1)
+            start_id = data.get('last_request_id', 1) + 1
             request_id_counter = itertools.count(start_id)
     else:
         requests = {}
@@ -80,7 +80,8 @@ class SurveyModal(Modal):
                 'Difficulty': self.children[2].value,
                 'Video': self.children[3].value,
                 'Note': self.children[4].value,
-            }
+            },
+            'message_id': interaction.message.id  # Store the message ID
         }
 
         # Save the request details to the JSON file
@@ -99,7 +100,12 @@ class SurveyModal(Modal):
 
         # Create a button and dropdown menu
         button_view = FeedbackView(request_id)
-        await interaction.channel.send(embed=embed, view=button_view)
+        message = await interaction.channel.send(embed=embed, view=button_view)
+        requests[request_id]['message_id'] = message.id  # Store the message ID
+
+        # Save the request details with the message ID
+        save_requests()
+
         await interaction.response.send_message("Request submitted successfully!", ephemeral=True)
 
 # Define a modal for feedback
@@ -199,14 +205,17 @@ async def reqlock(ctx):
     requests_open = False
     await ctx.send("Requests have been locked.")
 
-# Re-initialize the feedback views when the bot restarts
+# Reinitialize feedback views and buttons when the bot restarts
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
-    for request_id in requests.keys():
-        view = FeedbackView(request_id)
-        channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
-        await channel.send("Restoring feedback options for request ID: {request_id}", view=view)
+    for request_id, request_data in requests.items():
+        message_id = request_data.get('message_id')
+        if message_id:
+            channel = bot.get_channel(your_channel_id)  # Replace with your channel ID
+            message = await channel.fetch_message(message_id)
+            view = FeedbackView(request_id)
+            await message.edit(view=view)
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

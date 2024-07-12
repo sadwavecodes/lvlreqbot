@@ -1,9 +1,9 @@
 import os
-import json
 import discord
 from discord.ext import commands
 from discord.ui import Button, View, Modal, TextInput, Select
 import itertools
+import json
 
 # Get the token from the environment variable
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -18,29 +18,37 @@ required_questions = [False] * 5
 
 # Define a dictionary to store request details by request ID
 requests = {}
-request_id_counter = None
+request_id_counter = itertools.count(1)
 
 # Define a flag to control request availability, defaulting to unlocked
 requests_open = True
 
-# Load request data from a file
+# Define the path to the requests.json file
+REQUESTS_FILE_PATH = 'requests.json'
+
+# Load requests from the JSON file
 def load_requests():
     global requests, request_id_counter
-    if os.path.exists("requests.json"):
-        with open("requests.json", "r") as f:
-            data = json.load(f)
-            requests = data.get("requests", {})
-            last_request_id = max(map(int, requests.keys()), default=0)
-            request_id_counter = itertools.count(last_request_id + 1)
+    if os.path.exists(REQUESTS_FILE_PATH):
+        with open(REQUESTS_FILE_PATH, 'r') as file:
+            data = json.load(file)
+            requests = data.get('requests', {})
+            start_id = data.get('last_request_id', 1)
+            request_id_counter = itertools.count(start_id)
     else:
+        requests = {}
         request_id_counter = itertools.count(1)
 
-# Save request data to a file
+# Save requests to the JSON file
 def save_requests():
-    with open("requests.json", "w") as f:
-        json.dump({"requests": requests}, f)
+    data = {
+        'requests': requests,
+        'last_request_id': next(request_id_counter) - 1
+    }
+    with open(REQUESTS_FILE_PATH, 'w') as file:
+        json.dump(data, file)
 
-# Load requests at startup
+# Load existing requests when the bot starts
 load_requests()
 
 # Define the modal class with specified questions
@@ -75,7 +83,7 @@ class SurveyModal(Modal):
             }
         }
 
-        # Save requests to the file
+        # Save the request details to the JSON file
         save_requests()
 
         # Create an embed with the responses
@@ -190,6 +198,15 @@ async def reqlock(ctx):
     global requests_open
     requests_open = False
     await ctx.send("Requests have been locked.")
+
+# Re-initialize the feedback views when the bot restarts
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user}")
+    for request_id in requests.keys():
+        view = FeedbackView(request_id)
+        channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+        await channel.send("Restoring feedback options for request ID: {request_id}", view=view)
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

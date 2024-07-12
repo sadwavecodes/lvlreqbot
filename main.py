@@ -81,7 +81,7 @@ class SurveyModal(Modal):
                 'Video': self.children[3].value,
                 'Note': self.children[4].value,
             },
-            'message_id': interaction.message.id  # Store the message ID
+            'message_id': None  # Initialize the message ID as None
         }
 
         # Save the request details to the JSON file
@@ -212,10 +212,13 @@ async def on_ready():
     for request_id, request_data in requests.items():
         message_id = request_data.get('message_id')
         if message_id:
-            channel = bot.get_channel(your_channel_id)  # Replace with your channel ID
-            message = await channel.fetch_message(message_id)
-            view = FeedbackView(request_id)
-            await message.edit(view=view)
+            channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+            try:
+                message = await channel.fetch_message(message_id)
+                view = FeedbackView(request_id)
+                await message.edit(view=view)
+            except discord.NotFound:
+                print(f"Message ID {message_id} not found for request ID {request_id}")
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

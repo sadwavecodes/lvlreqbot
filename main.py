@@ -19,6 +19,9 @@ required_questions = [False] * 5
 requests = {}
 request_id_counter = itertools.count(1)
 
+# Define a flag to control request availability, defaulting to unlocked
+requests_open = True
+
 # Define the modal class with specified questions
 class SurveyModal(Modal):
     def __init__(self, required_status):
@@ -138,14 +141,31 @@ async def reqbutton(ctx):
     button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
 
     async def button_callback(interaction: discord.Interaction):
-        modal = SurveyModal(required_questions)
-        await interaction.response.send_modal(modal)
+        if requests_open:
+            modal = SurveyModal(required_questions)
+            await interaction.response.send_modal(modal)
+        else:
+            await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
 
     button.callback = button_callback
 
     view = View()
     view.add_item(button)
     await ctx.send("Click the button to request a level.", view=view)
+
+# Command to unlock the requests
+@bot.command()
+async def requnlock(ctx):
+    global requests_open
+    requests_open = True
+    await ctx.send("Requests have been unlocked.")
+
+# Command to lock the requests
+@bot.command()
+async def reqlock(ctx):
+    global requests_open
+    requests_open = False
+    await ctx.send("Requests have been locked.")
 
 # Run the bot
 bot.run(DISCORD_TOKEN)

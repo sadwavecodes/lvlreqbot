@@ -153,6 +153,9 @@ async def reqbutton(ctx):
     view.add_item(button)
     await ctx.send("Click the button to request a level.", view=view)
 
+    # Persist the view so it keeps working even if the bot restarts
+    bot.add_view(view)
+
 # Command to unlock the requests
 @bot.command()
 async def requnlock(ctx):
@@ -168,4 +171,23 @@ async def reqlock(ctx):
     await ctx.send("Requests have been locked.")
 
 # Run the bot
+@bot.event
+async def on_ready():
+    # Re-add the persistent view when the bot restarts
+    view = View()
+    button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
+
+    async def button_callback(interaction: discord.Interaction):
+        if requests_open:
+            modal = SurveyModal(required_questions)
+            await interaction.response.send_modal(modal)
+        else:
+            await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
+
+    button.callback = button_callback
+    view.add_item(button)
+    bot.add_view(view)
+
+    print(f'Logged in as {bot.user.name}')
+
 bot.run(DISCORD_TOKEN)

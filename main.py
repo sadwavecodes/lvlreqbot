@@ -1,4 +1,5 @@
 import os
+import json
 import discord
 from discord.ext import commands
 from discord.ui import Button, View, Modal, TextInput, Select
@@ -17,10 +18,30 @@ required_questions = [False] * 5
 
 # Define a dictionary to store request details by request ID
 requests = {}
-request_id_counter = itertools.count(1)
+request_id_counter = None
 
 # Define a flag to control request availability, defaulting to unlocked
 requests_open = True
+
+# Load request data from a file
+def load_requests():
+    global requests, request_id_counter
+    if os.path.exists("requests.json"):
+        with open("requests.json", "r") as f:
+            data = json.load(f)
+            requests = data.get("requests", {})
+            last_request_id = max(map(int, requests.keys()), default=0)
+            request_id_counter = itertools.count(last_request_id + 1)
+    else:
+        request_id_counter = itertools.count(1)
+
+# Save request data to a file
+def save_requests():
+    with open("requests.json", "w") as f:
+        json.dump({"requests": requests}, f)
+
+# Load requests at startup
+load_requests()
 
 # Define the modal class with specified questions
 class SurveyModal(Modal):
@@ -53,6 +74,9 @@ class SurveyModal(Modal):
                 'Note': self.children[4].value,
             }
         }
+
+        # Save requests to the file
+        save_requests()
 
         # Create an embed with the responses
         embed = discord.Embed(title="Request", color=discord.Color.blue())
@@ -153,9 +177,6 @@ async def reqbutton(ctx):
     view.add_item(button)
     await ctx.send("Click the button to request a level.", view=view)
 
-    # Persist the view so it keeps working even if the bot restarts
-    bot.add_view(view)
-
 # Command to unlock the requests
 @bot.command()
 async def requnlock(ctx):
@@ -171,23 +192,4 @@ async def reqlock(ctx):
     await ctx.send("Requests have been locked.")
 
 # Run the bot
-@bot.event
-async def on_ready():
-    # Re-add the persistent view when the bot restarts
-    view = View()
-    button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
-
-    async def button_callback(interaction: discord.Interaction):
-        if requests_open:
-            modal = SurveyModal(required_questions)
-            await interaction.response.send_modal(modal)
-        else:
-            await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
-
-    button.callback = button_callback
-    view.add_item(button)
-    bot.add_view(view)
-
-    print(f'Logged in as {bot.user.name}')
-
 bot.run(DISCORD_TOKEN)

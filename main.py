@@ -189,7 +189,11 @@ async def reqbutton(ctx):
 
     view = View()
     view.add_item(button)
-    await ctx.send("Click the button to request a level.", view=view)
+    message = await ctx.send("Click the button to request a level.", view=view)
+
+    # Save the message ID for reinitializing the button after restart
+    with open('button_message_id.json', 'w') as f:
+        json.dump({'message_id': message.id}, f)
 
 # Command to unlock the requests
 @bot.command()
@@ -220,5 +224,32 @@ async def on_ready():
             except discord.NotFound:
                 print(f"Message ID {message_id} not found for request ID {request_id}")
 
+    # Reinitialize the request button
+    try:
+        with open('button_message_id.json', 'r') as f:
+            data = json.load(f)
+            message_id = data.get('message_id')
+            if message_id:
+                channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+                message = await channel.fetch_message(message_id)
+                button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
+
+                async def button_callback(interaction: discord.Interaction):
+                    if requests_open:
+                        modal = SurveyModal(required_questions)
+                        await interaction.response.send_modal(modal)
+                    else:
+                        await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
+
+                button.callback = button_callback
+
+                view = View()
+                view.add_item(button)
+                await message.edit(view=view)
+    except FileNotFoundError:
+        print("No button message ID file found. The request button needs to be re-created using the !reqbutton command.")
+
 # Run the bot
 bot.run(DISCORD_TOKEN)
+
+

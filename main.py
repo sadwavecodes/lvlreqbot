@@ -1,9 +1,10 @@
 import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ui import Button, View, Modal, TextInput, Select
 import itertools
 import json
+import asyncio
 
 # Get the token from the environment variable
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -145,7 +146,7 @@ class FeedbackModal(Modal):
 # Define a view with a dropdown menu for feedback options
 class FeedbackView(View):
     def __init__(self, request_id):
-        super().__init__()
+        super().__init__(timeout=None)
         self.request_id = request_id
         self.add_item(FeedbackDropdown(request_id))
 
@@ -187,13 +188,9 @@ async def reqbutton(ctx):
 
     button.callback = button_callback
 
-    view = View()
+    view = View(timeout=None)
     view.add_item(button)
-    message = await ctx.send("Click the button to request a level.", view=view)
-
-    # Save the message ID for reinitializing the button after restart
-    with open('button_message_id.json', 'w') as f:
-        json.dump({'message_id': message.id}, f)
+    await ctx.send("Click the button to request a level.", view=view)
 
 # Command to unlock the requests
 @bot.command()
@@ -223,33 +220,21 @@ async def on_ready():
                 await message.edit(view=view)
             except discord.NotFound:
                 print(f"Message ID {message_id} not found for request ID {request_id}")
+    # Start the task to refresh views
+    refresh_views.start()
 
-    # Reinitialize the request button
-    try:
-        with open('button_message_id.json', 'r') as f:
-            data = json.load(f)
-            message_id = data.get('message_id')
-            if message_id:
-                channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+@tasks.loop(minutes=1)
+async def refresh_views():
+    channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+    for request_id, request_data in requests.items():
+        message_id = request_data.get('message_id')
+        if message_id:
+            try:
                 message = await channel.fetch_message(message_id)
-                button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
-
-                async def button_callback(interaction: discord.Interaction):
-                    if requests_open:
-                        modal = SurveyModal(required_questions)
-                        await interaction.response.send_modal(modal)
-                    else:
-                        await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
-
-                button.callback = button_callback
-
-                view = View()
-                view.add_item(button)
+                view = FeedbackView(request_id)
                 await message.edit(view=view)
-    except FileNotFoundError:
-        print("No button message ID file found. The request button needs to be re-created using the !reqbutton command.")
+            except discord.NotFound:
+                print(f"Message ID {message_id} not found for request ID {request_id}")
 
 # Run the bot
 bot.run(DISCORD_TOKEN)
-
-

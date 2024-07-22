@@ -235,7 +235,6 @@ else:
 
 @bot.event
 async def on_ready():
-print(f”Logged in as {bot.user}”)
 channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
 
 # Reload the request buttons

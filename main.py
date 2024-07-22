@@ -129,9 +129,9 @@ class FeedbackModal(Modal):
             feedback_embed = discord.Embed(
                 title=f"**{self.option}**",
                 description=f"**Level Name:** {level_name}\n**Level ID:** {level_id}\n\n**Reason:**\n```{reason}```",
-                color=discord.Color.green() if self.option == "Sent" else discord.Color.red()
+                color=discord.Color.green() if self.option == "Sent" else (discord.Color.red() if self.option == "Not Sent" else discord.Color.blue())
             )
-            feedback_embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/816702248242380880.png?v=1" if self.option == "Sent" else "https://cdn.discordapp.com/emojis/816702133625421872.png?v=1")
+            feedback_embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/816702248242380880.png?v=1" if self.option == "Sent" else ("https://cdn.discordapp.com/emojis/816702133625421872.png?v=1" if self.option == "Not Sent" else "https://cdn.discordapp.com/emojis/726776006475644928.png?v=1"))
             feedback_embed.add_field(name="Request Helper", value=self.feedback_author.mention, inline=False)
 
             # Send the feedback embed to the channel
@@ -156,7 +156,8 @@ class FeedbackDropdown(Select):
         self.request_id = request_id
         options = [
             discord.SelectOption(label="Sent", description="Mark the level as sent"),
-            discord.SelectOption(label="Not Sent", description="Mark the level as not sent")
+            discord.SelectOption(label="Not Sent", description="Mark the level as not sent"),
+            discord.SelectOption(label="Already Rated", description="Mark the level as already rated")
         ]
         super().__init__(placeholder="Choose an action...", min_values=1, max_values=1, options=options)
 
@@ -231,7 +232,6 @@ async def request(ctx, request_id: int):
     else:
         await ctx.send("Request ID not found.")
 
-
 @bot.event
 async def on_ready():
     channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
@@ -271,6 +271,4 @@ async def on_ready():
             except discord.NotFound:
                 print(f"Message ID {message_id} not found for request ID {request_id}")
 
-
 bot.run(DISCORD_TOKEN)
-

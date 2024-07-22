@@ -231,45 +231,45 @@ async def request(ctx, request_id: int):
     else:
         await ctx.send("Request ID not found.")
 
+
 @bot.event
 async def on_ready():
-channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+    channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
 
-# Reload the request buttons
-try:
-    with open("button_message_id.json", "r") as file:
-        data = json.load(file)
-        button_message_id = data.get("message_id")
-        if button_message_id:
-            message = await channel.fetch_message(button_message_id)
-            button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
+    # Reload the request buttons
+    try:
+        with open("button_message_id.json", "r") as file:
+            data = json.load(file)
+            button_message_id = data.get("message_id")
+            if button_message_id:
+                message = await channel.fetch_message(button_message_id)
+                button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
 
-            async def button_callback(interaction: discord.Interaction):
-                if requests_open:
-                    modal = SurveyModal(required_questions)
-                    await interaction.response.send_modal(modal)
-                else:
-                    await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
+                async def button_callback(interaction: discord.Interaction):
+                    if requests_open:
+                        modal = SurveyModal(required_questions)
+                        await interaction.response.send_modal(modal)
+                    else:
+                        await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
 
-            button.callback = button_callback
+                button.callback = button_callback
 
-            view = View(timeout=None)
-            view.add_item(button)
-            await message.edit(view=view)
-except FileNotFoundError:
-    print("Button message ID file not found.")
+                view = View(timeout=None)
+                view.add_item(button)
+                await message.edit(view=view)
+    except FileNotFoundError:
+        print("Button message ID file not found.")
 
-# Reload the feedback views
-for request_id, request_data in requests.items():
-    message_id = request_data.get('message_id')
-    if message_id:
-        try:
-            message = await channel.fetch_message(message_id)
-            view = FeedbackView(request_id)
-            await message.edit(view=view)
-        except discord.NotFound:
-            print(f"Message ID {message_id} not found for request ID {request_id}")
-
+    # Reload the feedback views
+    for request_id, request_data in requests.items():
+        message_id = request_data.get('message_id')
+        if message_id:
+            try:
+                message = await channel.fetch_message(message_id)
+                view = FeedbackView(request_id)
+                await message.edit(view=view)
+            except discord.NotFound:
+                print(f"Message ID {message_id} not found for request ID {request_id}")
 
 
 bot.run(DISCORD_TOKEN)

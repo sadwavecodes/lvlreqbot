@@ -190,7 +190,11 @@ async def reqbutton(ctx):
 
     view = View(timeout=None)
     view.add_item(button)
-    await ctx.send("Click the button to request a level.", view=view)
+    message = await ctx.send("Click the button to request a level.", view=view)
+
+    # Store the button message ID to refresh it later
+    with open("button_message_id.json", "w") as file:
+        json.dump({"message_id": message.id}, file)
 
 # Command to unlock the requests
 @bot.command()
@@ -206,35 +210,70 @@ async def reqlock(ctx):
     requests_open = False
     await ctx.send("Requests have been locked.")
 
-# Reinitialize feedback views and buttons when the bot restarts
+# Command to re-display the request embed based on the request ID
+@bot.command()
+async def request(ctx, request_id: int):
+    if request_id in requests:
+        request_data = requests[request_id]
+        embed = discord.Embed(title="Request", color=discord.Color.blue())
+        embed.set_author(name=f"User ID: {request_data['author_id']}", icon_url=ctx.author.avatar.url)
+
+        for key, value in request_data['responses'].items():
+            embed.add_field(name=key, value=value, inline=False)
+        embed.set_footer(text=f"Request ID: {request_id}")
+
+        button_view = FeedbackView(request_id)
+        message = await ctx.send(embed=embed, view=button_view)
+        request_data['message_id'] =message.id  # Update the message ID
+
+    # Save the updated request details to the JSON file
+    save_requests()
+else:
+    await ctx.send("Request ID not found.")
+
+
+
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
-    for request_id, request_data in requests.items():
-        message_id = request_data.get('message_id')
-        if message_id:
-            channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
-            try:
-                message = await channel.fetch_message(message_id)
-                view = FeedbackView(request_id)
-                await message.edit(view=view)
-            except discord.NotFound:
-                print(f"Message ID {message_id} not found for request ID {request_id}")
-    # Start the task to refresh views
-    refresh_views.start()
+print(f”Logged in as {bot.user}”)
+channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
 
-@tasks.loop(minutes=1)
-async def refresh_views():
-    channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
-    for request_id, request_data in requests.items():
-        message_id = request_data.get('message_id')
-        if message_id:
-            try:
-                message = await channel.fetch_message(message_id)
-                view = FeedbackView(request_id)
-                await message.edit(view=view)
-            except discord.NotFound:
-                print(f"Message ID {message_id} not found for request ID {request_id}")
+# Reload the request buttons
+try:
+    with open("button_message_id.json", "r") as file:
+        data = json.load(file)
+        button_message_id = data.get("message_id")
+        if button_message_id:
+            message = await channel.fetch_message(button_message_id)
+            button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
 
-# Run the bot
+            async def button_callback(interaction: discord.Interaction):
+                if requests_open:
+                    modal = SurveyModal(required_questions)
+                    await interaction.response.send_modal(modal)
+                else:
+                    await interaction.response.send_message("Requests are currently closed, come back soon!", ephemeral=True)
+
+            button.callback = button_callback
+
+            view = View(timeout=None)
+            view.add_item(button)
+            await message.edit(view=view)
+except FileNotFoundError:
+    print("Button message ID file not found.")
+
+# Reload the feedback views
+for request_id, request_data in requests.items():
+    message_id = request_data.get('message_id')
+    if message_id:
+        try:
+            message = await channel.fetch_message(message_id)
+            view = FeedbackView(request_id)
+            await message.edit(view=view)
+        except discord.NotFound:
+            print(f"Message ID {message_id} not found for request ID {request_id}")
+
+
+
 bot.run(DISCORD_TOKEN)
+

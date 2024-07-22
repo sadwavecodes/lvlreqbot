@@ -224,14 +224,12 @@ async def request(ctx, request_id: int):
 
         button_view = FeedbackView(request_id)
         message = await ctx.send(embed=embed, view=button_view)
-        request_data['message_id'] =message.id  # Update the message ID
+        request_data['message_id'] = message.id  # Update the message ID
 
-    # Save the updated request details to the JSON file
-    save_requests()
-     else:
-    await ctx.send("Request ID not found.")
-
-
+        # Save the updated request details to the JSON file
+        save_requests()
+    else:
+        await ctx.send("Request ID not found.")
 
 @bot.event
 async def on_ready():

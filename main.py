@@ -126,23 +126,38 @@ class FeedbackModal(Modal):
             level_id = requests[self.request_id]['level_id']
             level_name = requests[self.request_id]['responses']['Level Name']
 
+            # Define the color and thumbnail based on the option
+            if self.option == "Sent":
+                color = discord.Color.green()
+                thumbnail_url = "https://cdn.discordapp.com/emojis/816702248242380880.png?v=1"
+                target_channel_id = 1112748495019982899  # Sent channel ID
+            elif self.option == "Not Sent":
+                color = discord.Color.red()
+                thumbnail_url = "https://cdn.discordapp.com/emojis/816702133625421872.png?v=1"
+                target_channel_id = 1120740229633015829  # Not Sent channel ID
+            elif self.option == "Already Rated":
+                color = discord.Color.blue()
+                thumbnail_url = "https://cdn.discordapp.com/emojis/726776006475644928.png?v=1"
+                target_channel_id = 1120740229633015829  # Same channel as Not Sent
+
             feedback_embed = discord.Embed(
                 title=f"**{self.option}**",
                 description=f"**Level Name:** {level_name}\n**Level ID:** {level_id}\n\n**Reason:**\n```{reason}```",
-                color=discord.Color.green() if self.option == "Sent" else (discord.Color.red() if self.option == "Not Sent" else discord.Color.blue())
+                color=color
             )
-            feedback_embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/816702248242380880.png?v=1" if self.option == "Sent" else ("https://cdn.discordapp.com/emojis/816702133625421872.png?v=1" if self.option == "Not Sent" else "https://cdn.discordapp.com/emojis/726776006475644928.png?v=1"))
+            feedback_embed.set_thumbnail(url=thumbnail_url)
             feedback_embed.add_field(name="Request Helper", value=self.feedback_author.mention, inline=False)
 
-            # Send the feedback embed to the channel
-            await interaction.channel.send(
+            # Send the feedback embed to the target channel
+            target_channel = interaction.guild.get_channel(target_channel_id)
+            await target_channel.send(
                 content=f"As Requested By: {original_author_mention}",
                 embed=feedback_embed
             )
             await interaction.response.send_message("Feedback submitted successfully!", ephemeral=True)
         else:
             await interaction.response.send_message("Request not found.", ephemeral=True)
-
+            
 # Define a view with a dropdown menu for feedback options
 class FeedbackView(View):
     def __init__(self, request_id):

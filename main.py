@@ -170,10 +170,14 @@ class FeedbackDropdown(Select):
         options = [
             discord.SelectOption(label="Sent", description="Mark the level as sent"),
             discord.SelectOption(label="Not Sent", description="Mark the level as not sent"),
-            discord.SelectOption(label="Already Rated", description="Mark the level as already rated"),
-            discord.SelectOption(label="Already Requested", description="Mark the level as already requested")  # Added
+            discord.SelectOption(label="Already Rated", description="Mark the level as already rated")
         ]
         super().__init__(placeholder="Choose an action...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        option = self.values[0]
+        feedback_modal = FeedbackModal(option, self.request_id, interaction.user)
+        await interaction.response.send_modal(feedback_modal)
 # Command to toggle the required status of a question
 @bot.command()
 async def modalreq(ctx, question_number: int):

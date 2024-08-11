@@ -64,7 +64,7 @@ class SurveyModal(Modal):
         self.add_item(TextInput(label="Video", required=self.required_status[3]))
         self.add_item(TextInput(label="Note", required=self.required_status[4]))
 
-    async def on_submit(self, interaction: discord.Interaction):
+        async def on_submit(self, interaction: discord.Interaction):
     level_id = self.children[1].value
 
     # Generate a numerical request ID

@@ -55,7 +55,7 @@ load_requests()
 # Define the modal class with specified questions
 class SurveyModal(Modal):
     def __init__(self, required_status):
-        super().__init__(title="Survey")
+        super().__init__(title="Level Requests")
         self.required_status = required_status
 
         self.add_item(TextInput(label="Level Name", required=self.required_status[0]))

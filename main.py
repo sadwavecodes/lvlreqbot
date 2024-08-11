@@ -64,52 +64,52 @@ class SurveyModal(Modal):
         self.add_item(TextInput(label="Video", required=self.required_status[3]))
         self.add_item(TextInput(label="Note", required=self.required_status[4]))
 
-        async def on_submit(self, interaction: discord.Interaction):
-            level_id = self.children[1].value
+    async def on_submit(self, interaction: discord.Interaction):
+        level_id = self.children[1].value
 
-    # Generate a numerical request ID
-    request_id = next(request_id_counter)
+        # Generate a numerical request ID
+        request_id = next(request_id_counter)
 
-    # Store the request details
-    requests[request_id] = {
-        'author_id': interaction.user.id,
-        'author_mention': interaction.user.mention,
-        'level_id': level_id,
-        'responses': {
-            'Level Name': self.children[0].value,
-            'Level ID': level_id,
-            'Difficulty': self.children[2].value,
-            'Video': self.children[3].value,
-            'Note': self.children[4].value,
-        },
-        'message_id': None  # Initialize the message ID as None
-    }
+        # Store the request details
+        requests[request_id] = {
+            'author_id': interaction.user.id,
+            'author_mention': interaction.user.mention,
+            'level_id': level_id,
+            'responses': {
+                'Level Name': self.children[0].value,
+                'Level ID': level_id,
+                'Difficulty': self.children[2].value,
+                'Video': self.children[3].value,
+                'Note': self.children[4].value,
+            },
+            'message_id': None  # Initialize the message ID as None
+        }
 
-    # Save the request details to the JSON file
-    save_requests()
+        # Save the request details to the JSON file
+        save_requests()
 
-    # Create an embed with the responses
-    embed = discord.Embed(title="Request", color=discord.Color.blue())
-    embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
+        # Create an embed with the responses
+        embed = discord.Embed(title="Request", color=discord.Color.blue())
+        embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
 
-    embed.add_field(name="Level Name", value=self.children[0].value, inline=False)
-    embed.add_field(name="Level ID", value=level_id, inline=False)
-    embed.add_field(name="Difficulty", value=self.children[2].value, inline=False)
-    embed.add_field(name="Video", value=self.children[3].value, inline=False)
-    embed.add_field(name="Note", value=self.children[4].value, inline=False)
-    embed.set_footer(text=f"Request ID: {request_id}")
+        embed.add_field(name="Level Name", value=self.children[0].value, inline=False)
+        embed.add_field(name="Level ID", value=level_id, inline=False)
+        embed.add_field(name="Difficulty", value=self.children[2].value, inline=False)
+        embed.add_field(name="Video", value=self.children[3].value, inline=False)
+        embed.add_field(name="Note", value=self.children[4].value, inline=False)
+        embed.set_footer(text=f"Request ID: {request_id}")
 
-    # Send the message
-    target_channel = interaction.guild.get_channel(1120741230570127371)  # Requests channel ID
-    message = await target_channel.send(embed=embed, view=button_view)  # Ensure this is inside the async function
+        # Send the message
+        target_channel = interaction.guild.get_channel(1120741230570127371)  # Requests channel ID
+        message = await target_channel.send(embed=embed, view=FeedbackView(request_id))  # Ensure this is inside the async function
 
-    # Store the message ID
-    requests[request_id]['message_id'] = message.id
+        # Store the message ID
+        requests[request_id]['message_id'] = message.id
 
-    # Save the request details with the message ID
-    save_requests()
+        # Save the request details with the message ID
+        save_requests()
 
-    await interaction.response.send_message("Request submitted successfully!", ephemeral=True)
+        await interaction.response.send_message("Request submitted successfully!", ephemeral=True)
 
 class FeedbackModal(Modal):
     def __init__(self, option, request_id, feedback_author):

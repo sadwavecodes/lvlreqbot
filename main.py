@@ -65,7 +65,7 @@ class SurveyModal(Modal):
         self.add_item(TextInput(label="Note", required=self.required_status[4]))
 
         async def on_submit(self, interaction: discord.Interaction):
-    level_id = self.children[1].value
+            level_id = self.children[1].value
 
     # Generate a numerical request ID
     request_id = next(request_id_counter)

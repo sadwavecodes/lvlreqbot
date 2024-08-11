@@ -185,7 +185,7 @@ async def modalreq(ctx, question_number: int):
 
 # Command to create the button
 @bot.command()
-async def reqbutton(ctx):
+async def heha(ctx):
     button = Button(label="Request a Level", style=discord.ButtonStyle.primary)
 
     async def button_callback(interaction: discord.Interaction):

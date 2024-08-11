@@ -99,11 +99,12 @@ class SurveyModal(Modal):
     embed.add_field(name="Note", value=self.children[4].value, inline=False)
     embed.set_footer(text=f"Request ID: {request_id}")
 
-    # Create a button and dropdown menu
-    button_view = FeedbackView(request_id)
+    # Send the message
     target_channel = interaction.guild.get_channel(1120741230570127371)  # Requests channel ID
-    message = await interaction.channel.send(embed=embed, view=button_view)
-    requests[request_id]['message_id'] = message.id  # Store the message ID
+    message = await target_channel.send(embed=embed, view=button_view)  # Ensure this is inside the async function
+
+    # Store the message ID
+    requests[request_id]['message_id'] = message.id
 
     # Save the request details with the message ID
     save_requests()

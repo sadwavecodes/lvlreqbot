@@ -102,7 +102,7 @@ class SurveyModal(Modal):
     # Create a button and dropdown menu
     button_view = FeedbackView(request_id)
     target_channel = interaction.guild.get_channel(1120741230570127371)  # Requests channel ID
-    message = await target_channel.send(embed=embed, view=button_view)
+    message = await interaction.channel.send(embed=embed, view=button_view)
     requests[request_id]['message_id'] = message.id  # Store the message ID
 
     # Save the request details with the message ID

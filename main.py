@@ -242,7 +242,7 @@ async def request(ctx, request_id: int):
 
 @bot.event
 async def on_ready():
-    channel = bot.get_channel(1260915914568892576)  # Replace with your channel ID
+    channel = bot.get_channel(1120741230570127371)  # Replace with your channel ID
 
     # Reload the request buttons
     try:

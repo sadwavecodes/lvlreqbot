@@ -65,51 +65,51 @@ class SurveyModal(Modal):
         self.add_item(TextInput(label="Note", required=self.required_status[4]))
 
     async def on_submit(self, interaction: discord.Interaction):
-        level_id = self.children[1].value
+    level_id = self.children[1].value
 
-        # Generate a numerical request ID
-        request_id = next(request_id_counter)
+    # Generate a numerical request ID
+    request_id = next(request_id_counter)
 
-        # Store the request details
-        requests[request_id] = {
-            'author_id': interaction.user.id,
-            'author_mention': interaction.user.mention,
-            'level_id': level_id,
-            'responses': {
-                'Level Name': self.children[0].value,
-                'Level ID': level_id,
-                'Difficulty': self.children[2].value,
-                'Video': self.children[3].value,
-                'Note': self.children[4].value,
-            },
-            'message_id': None  # Initialize the message ID as None
-        }
+    # Store the request details
+    requests[request_id] = {
+        'author_id': interaction.user.id,
+        'author_mention': interaction.user.mention,
+        'level_id': level_id,
+        'responses': {
+            'Level Name': self.children[0].value,
+            'Level ID': level_id,
+            'Difficulty': self.children[2].value,
+            'Video': self.children[3].value,
+            'Note': self.children[4].value,
+        },
+        'message_id': None  # Initialize the message ID as None
+    }
 
-        # Save the request details to the JSON file
-        save_requests()
+    # Save the request details to the JSON file
+    save_requests()
 
-        # Create an embed with the responses
-        embed = discord.Embed(title="Request", color=discord.Color.blue())
-        embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
+    # Create an embed with the responses
+    embed = discord.Embed(title="Request", color=discord.Color.blue())
+    embed.set_author(name=f"User ID: {interaction.user.id}", icon_url=interaction.user.avatar.url)
 
-        embed.add_field(name="Level Name", value=self.children[0].value, inline=False)
-        embed.add_field(name="Level ID", value=level_id, inline=False)
-        embed.add_field(name="Difficulty", value=self.children[2].value, inline=False)
-        embed.add_field(name="Video", value=self.children[3].value, inline=False)
-        embed.add_field(name="Note", value=self.children[4].value, inline=False)
-        embed.set_footer(text=f"Request ID: {request_id}")
+    embed.add_field(name="Level Name", value=self.children[0].value, inline=False)
+    embed.add_field(name="Level ID", value=level_id, inline=False)
+    embed.add_field(name="Difficulty", value=self.children[2].value, inline=False)
+    embed.add_field(name="Video", value=self.children[3].value, inline=False)
+    embed.add_field(name="Note", value=self.children[4].value, inline=False)
+    embed.set_footer(text=f"Request ID: {request_id}")
 
-        # Create a button and dropdown menu
-        button_view = FeedbackView(request_id)
-        message = await interaction.channel.send(embed=embed, view=button_view)
-        requests[request_id]['message_id'] = message.id  # Store the message ID
+    # Create a button and dropdown menu
+    button_view = FeedbackView(request_id)
+    target_channel = interaction.guild.get_channel(1120741230570127371)  # Requests channel ID
+    message = await target_channel.send(embed=embed, view=button_view)
+    requests[request_id]['message_id'] = message.id  # Store the message ID
 
-        # Save the request details with the message ID
-        save_requests()
+    # Save the request details with the message ID
+    save_requests()
 
-        await interaction.response.send_message("Request submitted successfully!", ephemeral=True)
+    await interaction.response.send_message("Request submitted successfully!", ephemeral=True)
 
-# Define a modal for feedback
 class FeedbackModal(Modal):
     def __init__(self, option, request_id, feedback_author):
         super().__init__(title=f"Feedback - {option}")
@@ -131,14 +131,11 @@ class FeedbackModal(Modal):
                 color = discord.Color.green()
                 thumbnail_url = "https://cdn.discordapp.com/emojis/816702248242380880.png?v=1"
                 target_channel_id = 1112748495019982899  # Sent channel ID
-            elif self.option == "Not Sent":
+            else:
+                # Covers both "Not Sent" and "Already Requested"
                 color = discord.Color.red()
                 thumbnail_url = "https://cdn.discordapp.com/emojis/816702133625421872.png?v=1"
                 target_channel_id = 1120740229633015829  # Not Sent channel ID
-            elif self.option == "Already Rated":
-                color = discord.Color.blue()
-                thumbnail_url = "https://cdn.discordapp.com/emojis/726776006475644928.png?v=1"
-                target_channel_id = 1120740229633015829  # Same channel as Not Sent
 
             feedback_embed = discord.Embed(
                 title=f"**{self.option}**",
@@ -172,15 +169,10 @@ class FeedbackDropdown(Select):
         options = [
             discord.SelectOption(label="Sent", description="Mark the level as sent"),
             discord.SelectOption(label="Not Sent", description="Mark the level as not sent"),
-            discord.SelectOption(label="Already Rated", description="Mark the level as already rated")
+            discord.SelectOption(label="Already Rated", description="Mark the level as already rated"),
+            discord.SelectOption(label="Already Requested", description="Mark the level as already requested")  # Added
         ]
         super().__init__(placeholder="Choose an action...", min_values=1, max_values=1, options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        option = self.values[0]
-        feedback_modal = FeedbackModal(option, self.request_id, interaction.user)
-        await interaction.response.send_modal(feedback_modal)
-
 # Command to toggle the required status of a question
 @bot.command()
 async def modalreq(ctx, question_number: int):

@@ -152,13 +152,6 @@ class FeedbackModal(Modal):
                 content=f"As Requested By: {original_author_mention}",
                 embed=feedback_embed
             )
-
-            if requests[self.request_id]['message_id']:
-    try:
-        request_message = await interaction.guild.get_channel(1120741230570127371).fetch_message(requests[self.request_id]['message_id'])
-        await request_message.delete()
-    except discord.NotFound:
-        print(f"Request message ID {requests[self.request_id]['message_id']} not found.")
         
             await interaction.response.send_message("Feedback submitted successfully!", ephemeral=True)
         else:
